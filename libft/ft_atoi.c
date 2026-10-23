@@ -6,7 +6,7 @@
 /*   By: wngamkri <wngamkri@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/08/29 16:27:11 by wngamkri          #+#    #+#             */
-/*   Updated: 2026/08/29 16:27:12 by wngamkri         ###   ########.fr       */
+/*   Updated: 2026/10/23 18:34:56 by wngamkri         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -38,11 +38,7 @@ int	ft_atoi(const char *str)
 	}
 	while (ft_isdigit(str[i]))
 	{
-<<<<<<< HEAD
 		sum = (sum * 10) + (str[i] - '0');
-=======
-		sum  = (sum * 10) + (str[i] - '0');
->>>>>>> d03270e08dba5aae43e794737259f8576a99b6f0
 		i++;
 	}
 	return ((int)(sum * sign));
