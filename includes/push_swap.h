@@ -105,8 +105,8 @@ void		raw_rotate(t_stack *s);
 void		raw_reverse(t_stack *s);
 
 /* Applies op on ctx, increments ctx->counts[op], prints the op name. */
-void		do_op(t_ctx *ctx, t_op op);
-const char	*op_name(t_op op);
+void	do_op(t_ctx *ctx, t_op op);
+char	*op_name(t_op op);
 
 /* Helper: rotate (ra/rra) or (rb/rrb) by the shortest way to bring the
 ** element at position pos (0 = top) to the top. */
