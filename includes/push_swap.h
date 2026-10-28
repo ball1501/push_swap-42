@@ -3,6 +3,7 @@
 
 # include <stdlib.h>
 # include <unistd.h>
+# include <limits.h>
 # include "libft.h"
 
 /* ************************************************************************** */
@@ -79,7 +80,7 @@ typedef struct s_ctx
 /*   parsing.c / parsing_utils.c   (person A)                                 */
 /* ************************************************************************** */
 
-int			parse_args(int argc, char **argv, t_ctx *ctx);
+void 		parse_args(int argc, char **argv, t_ctx *ctx);
 int			parse_flag(const char *arg, t_ctx *ctx);
 int			parse_number(const char *str, int *out);
 void		assign_index(t_stack *s);
