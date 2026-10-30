@@ -6,7 +6,7 @@
 /*   By: wngamkri <wngamkri@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/10/27 09:11:32 by wngamkri          #+#    #+#             */
-/*   Updated: 2026/10/27 10:46:48 by wngamkri         ###   ########.fr       */
+/*   Updated: 2026/10/30 18:24:39 by wngamkri         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -142,4 +142,35 @@ void	assign_index(t_stack *s)
 		cur->index = rank;
 		cur = cur->next;
 	}
+}
+
+/*
+** free_words
+** Frees the result of ft_split: the array AND every string inside it.
+**
+**   words --> [ ptr0 ][ ptr1 ][ ptr2 ][ NULL ]     (the array, on the heap)
+**                |       |       |
+**               "3"     "2"    "abc"                (each string, on the heap)
+**
+** Two levels, so two kinds of free:
+**   1. free each words[i], until the NULL that ends the array
+**      (ft_split uses ft_calloc, so the last slot is always NULL)
+**   2. free the array itself, LAST. Freeing it first and then reading
+**      words[i] would read freed memory.
+** The "if (!words)" lets us call this safely with the NULL returned by a
+** failed ft_split.
+*/
+void	free_words(char **words)
+{
+	int	i;
+
+	if (!words)
+		return ;
+	i = 0;
+	while (words[i])
+	{
+		free(words[i]);
+		i++;
+	}
+	free(words);
 }
