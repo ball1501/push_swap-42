@@ -106,8 +106,8 @@ void		raw_rotate(t_stack *s);
 void		raw_reverse(t_stack *s);
 
 /* Applies op on ctx, increments ctx->counts[op], prints the op name. */
-void	do_op(t_ctx *ctx, t_op op);
-char	*op_name(t_op op);
+void		do_op(t_ctx *ctx, t_op op);
+char		*op_name(t_op op);
 
 /* Helper: rotate (ra/rra) or (rb/rrb) by the shortest way to bring the
 ** element at position pos (0 = top) to the top. */
@@ -120,8 +120,8 @@ void		bring_to_top_b(t_ctx *ctx, int pos);
 
 void		compute_disorder(t_ctx *ctx);
 void		print_bench(t_ctx *ctx);
-const char	*strat_name(t_strat s);
-const char	*strat_complexity(t_strat s);
+char		*strat_name(t_strat s);
+char		*strat_complexity(t_strat s);
 int			total_ops(t_ctx *ctx);
 
 /* ************************************************************************** */
