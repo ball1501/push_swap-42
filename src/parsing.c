@@ -6,7 +6,7 @@
 /*   By: wngamkri <wngamkri@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/10/27 10:53:44 by wngamkri          #+#    #+#             */
-/*   Updated: 2026/10/28 11:03:11 by wngamkri         ###   ########.fr       */
+/*   Updated: 2026/10/30 18:24:59 by wngamkri         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -96,16 +96,69 @@ static int	has_duplicate(t_stack *s, int value)
 ** If the error happens at the 4th argument, the first 3 nodes are already
 ** in stack a: exit_error frees them (no leak).
 */
-static void	add_number(const char *arg, t_ctx *ctx)
+static int	add_number(const char *arg, t_ctx *ctx)
 {
 	int	value;
 
 	if (parse_number(arg, &value) == -1)
-		exit_error(ctx);
+		return (-1);
 	if (has_duplicate(&ctx->a, value))
-		exit_error(ctx);
+		return (-1);
 	if (stack_push_back(&ctx->a, value) == -1)
-		exit_error(ctx);
+		return (-1);
+	return (0);
+}
+
+/*
+** add_args  (static: only used in parse_args)
+** Handles ONE argv argument that is not a flag. It may hold several numbers
+** separated by spaces ("4 67 3"), so we split it with ft_split and give
+** every word to add_number. This is what makes both of these work:
+**   ./push_swap 4 67 3 87 23
+**   ./push_swap "4 67 3 87 23"     (and any mix: ./push_swap "4 67" 3)
+** return: 0 if every number was added, -1 on any error.
+**
+** It does NOT call exit_error itself. It returns -1 and parse_args calls
+** exit_error AFTER add_args has freed its own array. Otherwise exit_error
+** (which frees only the stacks) would leave the ft_split array leaking:
+**   ./push_swap "3 2 abc"  -> "3" and "2" are already in stack a,
+**                             "abc" fails, words is still allocated.
+** add_number follows the same rule: it returns a status, it never exits.
+**
+** Every way out of the function frees "words" exactly once:
+**   ft_split failed (NULL)       -> nothing was allocated, return -1
+**   no word ("" or "   ")        -> free the empty array, return -1 (Error,
+**                                   like ./checker "" 1 in the subject)
+**   add_number refuses a word    -> free_words, return -1
+**   all words accepted           -> free_words, return 0
+** Careful: free_words takes the whole array (words), not one word
+** (words[i]).
+*/
+static int	add_args(const char *arg, t_ctx *ctx)
+{
+	char	**words;
+	int		i;
+
+	words = ft_split(arg, ' ');
+	if (!words)
+		return (-1);
+	if (!words[0])
+	{
+		free_words(words);
+		return (-1);
+	}
+	i = 0;
+	while (words[i])
+	{
+		if (add_number(words[i], ctx) == -1)
+		{
+			free_words(words);
+			return (-1);
+		}
+		i++;
+	}
+	free_words(words);
+	return (0);
 }
 
 /*
@@ -134,8 +187,8 @@ void	parse_args(int argc, char **argv, t_ctx *ctx)
 			if (parse_flag(argv[i], ctx) == -1)
 				exit_error(ctx);
 		}
-		else
-			add_number(argv[i], ctx);
+		else if (add_args(argv[i], ctx) == -1)
+			exit_error(ctx);
 		i++;
 	}
 	assign_index(&ctx->a);
