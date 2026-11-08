@@ -29,6 +29,9 @@ SRC			= bench_utils.c \
 			  parsing_utils.c \
 			  parsing.c \
 			  sort_simple.c \
+			  sort_medium.c \
+			  sort_complex.c \
+			  sort_adaptive.c \
 			  stack.c \
 			  main.c
 

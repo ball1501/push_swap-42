@@ -23,9 +23,7 @@ int	main(int argc, char **argv)
 	if (ctx.a.size == 0)
 		return (0);
 	compute_disorder(&ctx);
-	ctx.used = STRAT_SIMPLE;
-	if (!stack_is_sorted(&ctx.a))
-		sort_simple(&ctx);
+	run_strategy(&ctx);
 	if (ctx.bench)
 		print_bench(&ctx);
 	stack_free(&ctx.a);
