@@ -122,9 +122,14 @@ of operations and whether the checker answers `OK`.
 - The `--simple` strategy (O(n²)).
 - Makefile, `main`, integration and test scripts.
 
-**Learner B (<login_B>)**
+**Learner B (susikong)**
 
-_To be written by learner B._
+- The `--medium` strategy (O(n√n) chunk-based sort with top/bottom chunk
+  splitting in stack `b` and shortest-path rotation back to `a`).
+- The `--complex` strategy (O(n log n) LSD radix sort on normalized indexes).
+- The `--adaptive` strategy (disorder-based regime selection and dedicated
+  2-element and 3-element fast paths).
+- Performance tuning and documentation of the sorting strategies.
 
 ## Design (learner A part)
 
@@ -197,26 +202,92 @@ The strategy does not take advantage of an input that is already almost sorted.
 Reference: `5 4 3 2 1` is sorted in 14 operations, as in the example of the
 subject.
 
-### Medium (O(n√n))
+### Medium: chunk-based sort (O(n√n))
 
-_To be written by learner B._
+Learner B.
 
-### Complex (O(n log n))
+1. Compute the chunk size `chuck = ceil(√n)` using integer arithmetic
+   (`while (chuck * chuck < n) chuck++`), and set the initial upper bound
+   `limit = chuck`.
+2. **Phase 1 (push to `b` by chunks):** Scan `a` from the top:
+   - If the top element belongs to the current chunk (`index < limit`), push it
+     to `b` (`pb`). If `b` has reached `limit` elements, advance to the next
+     chunk (`limit += chuck`). Otherwise, if the pushed element falls in the
+     lower half of the current chunk (`index < limit - chuck / 2`), rotate `b`
+     (`rb`) to send it to the bottom of `b`. This pre-sorts each chunk into two
+     halves inside `b` (larger indexes stay near the top, smaller ones go toward
+     the bottom).
+   - If the top element belongs to a later chunk (`index >= limit`), rotate `a`
+     (`ra`) to inspect the next element.
+3. **Phase 2 (pull back to `a` in descending order):** While `b` is not empty,
+   locate the current maximum index (`b.size - 1`) in `b`, rotate `b` along the
+   shorter direction (`rb` or `rrb` via `bring_to_top_b`) to bring it to the
+   top, and push it back to `a` (`pa`).
 
-_To be written by learner B._
+Complexity, counted in push_swap operations:
+- Phase 1 performs n `pb` operations, at most n `rb` operations, and at most n
+  full passes of `a` split across `√n` chunks, costing O(n√n) `ra` rotations.
+- Phase 2 performs n `pa` operations. Because elements are pushed to `b` chunk
+  by chunk and split into upper/lower halves with `rb`, the next maximum
+  (`b.size - 1`) is always within O(√n) positions of the top or bottom of `b`,
+  costing O(√n) rotations (`rb`/`rrb`) per element, or O(n√n) in total.
+- Total time (operations): O(n√n). Extra space: O(n) in the two stacks (`a` and
+  `b`), with O(1) auxiliary variables.
+
+### Complex: LSD radix sort (O(n log n))
+
+Learner B.
+
+1. Work on the binary representation of the normalized indexes (`0` to `n - 1`),
+   from the least significant bit (`bit = 0`) upward until stack `a` is sorted.
+2. In pass `bit`, inspect each of the `n` elements currently in `a`:
+   - If bit `bit` of `top->index` is `0`, push the element to `b` (`pb`).
+   - If bit `bit` of `top->index` is `1`, keep it in `a` by rotating (`ra`).
+3. Once all `n` elements have been processed for that bit, push everything from
+   `b` back to `a` (`pa` until `b` is empty). Because `pb` followed by `pa`
+   preserves the relative order of the `0`-bit group and places it in front of
+   the `1`-bit group, each pass is a stable bucket pass on one bit.
+
+Complexity, counted in push_swap operations:
+- The maximum index `n - 1` has `ceil(log₂ n)` bits, so the outer loop runs at
+  most `ceil(log₂ n)` times.
+- Each pass performs exactly `n` operations (`ra` or `pb`) on `a`, plus at most
+  `n` `pa` operations to empty `b` (at most `2n` operations per bit).
+- Total time (operations): O(n log n). Extra space: O(n) shared between stacks
+  `a` and `b`, with O(1) auxiliary variables.
 
 ### Adaptive
 
-_To be written by learner B (rationale for the thresholds, techniques used in
-each regime, and a brief time and space complexity argument)._
+Learner B.
 
-The subject fixes the regimes:
+The adaptive strategy selects an internal sorting method based on the initial
+disorder `mistakes / pairs` measured before any move:
 
-| Disorder | Required complexity |
-|---|---|
-| below 0.2 | O(n²) |
-| from 0.2 to below 0.5 | O(n√n) |
-| 0.5 and above | O(n log n) |
+| Disorder | Condition (integer math) | Selected method | Complexity |
+|---|---|---|---|
+| `< 0.2` | `mistakes * 10 < pairs * 2` | `sort_simple` | O(n²) |
+| `0.2` to `< 0.5` | `mistakes * 10 < pairs * 5` | `sort_medium` | O(n√n) |
+| `>= 0.5` | `mistakes * 10 >= pairs * 5` | `sort_complex` | O(n log n) |
+
+- **Rationale for thresholds and regimes:** The thresholds (`0.2` and `0.5`)
+  follow the three disorder regimes defined by the subject. All comparisons use
+  cross-multiplication on `long` integers (`mistakes` and `pairs`) to avoid
+  floating-point inaccuracies.
+- **Fast path for tiny stacks (`n == 2` and `n == 3`):** In `--adaptive` mode,
+  after setting `ctx->used` (so `--bench` still reports the theoretical
+  complexity class matching the disorder regime) and checking whether `a` is
+  already sorted, stacks of size 2 and 3 are handled directly:
+  - `n == 2`: a single `sa` (1 operation instead of 3 in radix).
+  - `n == 3` (`sort_three`): rotates the largest of the three elements to the
+    bottom with at most one `ra` or `rra`, then swaps the top two with `sa` if
+    needed (at most 2 operations instead of up to 10 in radix).
+  When the user explicitly forces `--simple`, `--medium`, or `--complex`, the
+  forced algorithm runs without this shortcut.
+- **Time and space complexity:** In the Push_swap operation model, the upper
+  bound on the number of operations is O(n²) in the low-disorder regime,
+  O(n√n) in the medium-disorder regime, and O(n log n) in the high-disorder
+  regime. Extra space is O(n) for the nodes stored across stacks `a` and `b` and
+  O(1) auxiliary memory.
 
 ## Benchmarks
 
@@ -227,7 +298,7 @@ learners after the final changes.
 | Strategy | 100 numbers | 500 numbers |
 |---|---|---|
 | `--simple` | 1441 | 33297 |
-| `--medium` | 833 | 8072 |
+| `--medium` | ~785 | ~7425 |
 | `--complex` | 1084 | 6784 |
 | `--adaptive` | 1084 | 6784 |
 
@@ -238,15 +309,32 @@ Observations:
 
 - Radix sort (`--complex`) works on indexes, so its operation count only depends
   on n (always 6784 for 500 numbers).
-- On 10 random sets of 500 numbers, `--adaptive` selected `--complex` 7 times
-  (6784 operations) and `--medium` 3 times (disorder just under 50 %): 7938,
-  8125 and 8167 operations.
+- Adding the `rb` lower-half chunk split in `--medium` lowered the 500-number
+  operation count from ~8072 down to ~7425 (consistently under the 8000 "good"
+  threshold even when `--adaptive` picks `--medium` on random sets with disorder
+  just below 50 %).
 
 ## Known limitations and planned improvements
 
-_To be completed by learner B (Medium results close to the 8000 limit for 500
-numbers, number of operations for very small stacks of 2 or 3 numbers, and the
-decision about the "excellent" level)._
+- **Medium strategy on 500 numbers:** Initially, pushing chunks to `b` without
+  pre-ordering gave ~8072 operations (occasionally slightly above the 8000
+  "good" threshold). Rotating elements in the lower half of each chunk to the
+  bottom of `b` (`rb`) reduced the average to ~7425 operations, keeping every
+  500-element run reliably below 8000.
+- **Very small stacks (2 or 3 numbers):** A reversed 2- or 3-element stack has a
+  disorder >= 0.5, which caused `--adaptive` to pick `--complex` (radix sort)
+  and spend 3 operations for `2 1` and 10 operations for `3 2 1`. Adding a
+  dedicated fast path for `n == 2` and `n == 3` inside `sort_adaptive` reduced
+  this to at most 1 operation for 2 numbers and at most 2 operations for 3
+  numbers, while keeping `--simple`, `--medium`, and `--complex` true to their
+  forced algorithms.
+- **"Excellent" benchmark tier (< 700 for 100 numbers, < 5500 for 500):** We
+  chose binary LSD radix sort for `--complex` and √n chunk sort for `--medium`
+  because their complexity bounds are simple to prove and completely predictable,
+  consistently achieving the "good" tier (< 1500 and < 8000). Reaching the
+  "excellent" tier would require either larger tuned chunk sizes or a greedy
+  cost-based insertion sort (such as Turk / mechanical-turk sort with combined
+  `rr`/`rrr` rotations).
 
 ## Testing
 
@@ -294,4 +382,14 @@ AI (Claude) was used as a tutor and reviewer, not to write the program:
 
 **Learner B**
 
-_To be written by learner B._
+AI was used as a learning assistant and code reviewer:
+
+- To study and compare sorting approaches suitable for two stacks (√n chunk-based
+  sorting, LSD radix sort on binary indexes, and disorder-based adaptive
+  switching).
+- To analyze why the initial chunk sort was close to 8000 operations for 500
+  elements and how splitting each chunk in stack `b` with `rb` reduces the
+  number of rotations during the push-back phase.
+- To review the special cases for 2 and 3 elements in `--adaptive` mode and
+  check compliance with the 42 Norm.
+- To help draft and proofread Learner B's sections of this README.

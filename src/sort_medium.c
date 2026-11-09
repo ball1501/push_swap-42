@@ -12,6 +12,10 @@
 
 #include "push_swap.h"
 
+/*
+** ถ้ายังไม่ครบก้อน และเลขอยู่ในครึ่งล่างของก้อน
+** ให้หมุน rb ลงไปก้นกอง b
+*/
 void	sort_medium(t_ctx *ctx)
 {
 	int	chuck;
@@ -28,11 +32,11 @@ void	sort_medium(t_ctx *ctx)
 			do_op(ctx, PB);
 			if (ctx->b.size == limit)
 				limit = limit + chuck;
+			else if (ctx->b.top->index < limit - (chuck / 2))
+				do_op(ctx, RB);
 		}
 		else
-		{
 			do_op(ctx, RA);
-		}
 	}
 	while (ctx->b.size > 0)
 	{
