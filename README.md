@@ -90,8 +90,14 @@ With the checker provided by the school:
 ARG="4 67 3 87 23"; ./push_swap $ARG | ./checker_linux $ARG
 ```
 
-`tests/bench.sh` runs a strategy on several random sets and reports the number
-of operations and whether the checker answers `OK`.
+`tests/bench.sh` runs a strategy on several random sets of distinct numbers.
+For each run it prints the number of operations and whether the checker answers
+`OK`, then a summary (minimum, maximum, average and number of failed runs):
+
+```
+bash tests/bench.sh [SIZE] [RUNS] [FLAG]          # defaults: 100 10 --adaptive
+CHECKER=./checker_linux bash tests/bench.sh 500 30 --medium
+```
 
 ## Project structure
 
@@ -108,6 +114,7 @@ of operations and whether the checker answers `OK`.
 | `src/sort_simple.c` | O(n²) strategy |
 | `src/sort_medium.c`, `src/sort_complex.c`, `src/sort_adaptive.c` | other strategies and strategy selection (see learner B) |
 | `libft/` | our libft |
+| `tests/bench.sh` | benchmark and checker script |
 
 ## Contributions
 
@@ -225,12 +232,14 @@ Learner B.
    top, and push it back to `a` (`pa`).
 
 Complexity, counted in push_swap operations:
-- Phase 1 performs n `pb` operations, at most n `rb` operations, and at most n
-  full passes of `a` split across `√n` chunks, costing O(n√n) `ra` rotations.
+- Phase 1 performs n `pb` operations and at most n `rb` operations. The scan of
+  `a` makes about √n passes (one per chunk), and each pass costs at most n
+  `ra` rotations, so the `ra` rotations cost O(n√n) in total.
 - Phase 2 performs n `pa` operations. Because elements are pushed to `b` chunk
   by chunk and split into upper/lower halves with `rb`, the next maximum
-  (`b.size - 1`) is always within O(√n) positions of the top or bottom of `b`,
-  costing O(√n) rotations (`rb`/`rrb`) per element, or O(n√n) in total.
+  (`b.size - 1`) is in practice within about O(√n) positions of the top or
+  bottom of `b`, costing O(√n) rotations (`rb`/`rrb`) per element, or O(n√n) in
+  total.
 - Total time (operations): O(n√n). Extra space: O(n) in the two stacks (`a` and
   `b`), with O(1) auxiliary variables.
 
@@ -272,7 +281,14 @@ disorder `mistakes / pairs` measured before any move:
 - **Rationale for thresholds and regimes:** The thresholds (`0.2` and `0.5`)
   follow the three disorder regimes defined by the subject. All comparisons use
   cross-multiplication on `long` integers (`mistakes` and `pairs`) to avoid
-  floating-point inaccuracies.
+  floating-point inaccuracies. The measurements below show why the regimes make
+  sense: on an almost sorted input (a 100-number list with a single swapped
+  pair, disorder 0.02 %) the simple strategy needs only 202 operations, about
+  2n. On random lists (disorder around 50 %) the best method depends on the
+  size: with 100 numbers `--medium` is better than `--complex` (about 775
+  against 1084 operations), while with 500 numbers `--complex` is better than
+  `--medium` (6784 against about 7400 operations). Random lists sit right next
+  to the 0.5 threshold, so `--adaptive` alternates between the two methods.
 - **Fast path for tiny stacks (`n == 2` and `n == 3`):** In `--adaptive` mode,
   after setting `ctx->used` (so `--bench` still reports the theoretical
   complexity class matching the disorder regime) and checking whether `a` is
@@ -291,36 +307,44 @@ disorder `mistakes / pairs` measured before any move:
 
 ## Benchmarks
 
-Number of operations measured with `tests/bench.sh` (one random set per cell for
-the table; random lists have a disorder close to 50 %). To be refreshed by both
-learners after the final changes.
+Number of operations measured with `tests/bench.sh` on random lists of distinct
+numbers (random lists have a disorder close to 50 %). The number of runs is
+given in each cell; every run was verified by the checker (`OK`).
 
-| Strategy | 100 numbers | 500 numbers |
+| Strategy | 100 numbers (min / avg / max) | 500 numbers (min / avg / max) |
 |---|---|---|
-| `--simple` | 1441 | 33297 |
-| `--medium` | ~785 | ~7425 |
-| `--complex` | 1084 | 6784 |
-| `--adaptive` | 1084 | 6784 |
+| `--simple` | 1441 (1 set) | 31765 to 33297 (2 sets) |
+| `--medium` | 747 / 775 / 805 (10 runs) | 7286 / 7423 / 7551 (30 runs) |
+| `--complex` | 1084 (constant) | 6784 (constant) |
+| `--adaptive` | 742 / 962 / 1084 (30 runs) | 6784 / 7063 / 7596 (30 runs) |
 
 Targets of the subject: 100 numbers: < 2000 (pass), < 1500 (good), < 700
 (excellent); 500 numbers: < 12000 (pass), < 8000 (good), < 5500 (excellent).
+All measured runs reach the "good" level for both sizes.
 
 Observations:
 
 - Radix sort (`--complex`) works on indexes, so its operation count only depends
-  on n (always 6784 for 500 numbers).
+  on n (always 1084 for 100 numbers and 6784 for 500 numbers).
+- With 100 numbers, `--adaptive` gives two groups of results: about 740 to 800
+  operations when it selects `--medium`, and 1084 when it selects `--complex`.
+  With 500 numbers it gives 6784 when it selects `--complex` and about 7300 to
+  7600 when it selects `--medium`.
 - Adding the `rb` lower-half chunk split in `--medium` lowered the 500-number
-  operation count from ~8072 down to ~7425 (consistently under the 8000 "good"
-  threshold even when `--adaptive` picks `--medium` on random sets with disorder
-  just below 50 %).
+  operation count from about 8070 (first version) to 7423 on average (30 runs),
+  so the result stays under the 8000 "good" threshold even when `--adaptive`
+  picks `--medium` on random sets with disorder just below 50 %.
+- The "excellent" level is not reached: the best 100-number result is 742
+  (< 700 needed) and the 500-number results are above 6700 (< 5500 needed).
 
 ## Known limitations and planned improvements
 
 - **Medium strategy on 500 numbers:** Initially, pushing chunks to `b` without
   pre-ordering gave ~8072 operations (occasionally slightly above the 8000
   "good" threshold). Rotating elements in the lower half of each chunk to the
-  bottom of `b` (`rb`) reduced the average to ~7425 operations, keeping every
-  500-element run reliably below 8000.
+  bottom of `b` (`rb`) reduced the average to 7423 operations; in the 30 runs of
+  `--medium` the maximum was 7551, and in the 30 runs of `--adaptive` the
+  maximum was 7596, both below 8000.
 - **Very small stacks (2 or 3 numbers):** A reversed 2- or 3-element stack has a
   disorder >= 0.5, which caused `--adaptive` to pick `--complex` (radix sort)
   and spend 3 operations for `2 1` and 10 operations for `3 2 1`. Adding a
@@ -328,21 +352,24 @@ Observations:
   this to at most 1 operation for 2 numbers and at most 2 operations for 3
   numbers, while keeping `--simple`, `--medium`, and `--complex` true to their
   forced algorithms.
+- **Stacks of 4 or 5 numbers:** these still go through the regular strategies.
+  For example `5 4 3 2 1` takes 25 operations with `--adaptive` (radix sort),
+  while `--simple` needs 14.
 - **"Excellent" benchmark tier (< 700 for 100 numbers, < 5500 for 500):** We
   chose binary LSD radix sort for `--complex` and √n chunk sort for `--medium`
   because their complexity bounds are simple to prove and completely predictable,
   consistently achieving the "good" tier (< 1500 and < 8000). Reaching the
   "excellent" tier would require either larger tuned chunk sizes or a greedy
-  cost-based insertion sort (such as Turk / mechanical-turk sort with combined
-  `rr`/`rrr` rotations).
+  cost-based insertion sort (such as the Turk algorithm with combined `rr`/`rrr`
+  rotations).
 
 ## Testing
 
-- `checker_linux` (provided) on random sets, for every strategy.
+- The checker provided by the school (`checker_Mac` on macOS, `checker_linux` on Linux) on random sets, for every strategy, and on all the permutations of 5 numbers.
 - Error cases: non-numeric argument, `2147483648`, `-2147483649`, duplicates,
   `7 007`, empty argument, unknown flag, flag without numbers.
-- Memory leaks checked with `valgrind` (Linux) and `leaks` (macOS), including
-  paths that fail in the middle of parsing (e.g. `./push_swap "3 2 abc"`).
+- Memory leaks checked with `leaks` (macOS), including paths that fail in the
+  middle of parsing (e.g. `./push_swap "3 2 abc"`).
 - `norminette` on every source file.
 
 ## Resources
@@ -360,7 +387,8 @@ Observations:
 
 **Learner A**
 
-AI (Claude) was used as a tutor and reviewer, not to write the program:
+AI (Claude) was used as a tutor and reviewer; the program was written by me
+from its explanations and skeletons:
 
 - To explain the subject and the notions needed (what the program must output,
   linked lists and pointers, the meaning of each operation, Big-O, the disorder
@@ -374,11 +402,15 @@ AI (Claude) was used as a tutor and reviewer, not to write the program:
   off-by-one conditions, an `int` range edge case, memory leaks on error paths).
   The functions in `stack.c`, `ops_raw.c`, `ops.c`, `error.c`, `parsing*.c`,
   `disorder.c`, `bench*.c`, `sort_simple.c`, `main.c` and the Makefile were
-  written and tested by me.
-- To suggest test programs and shell commands (including the benchmark script),
-  and to write temporary explanatory comments for my teammate (removed before
+  completed by me from these skeletons and tested by me.
+- To suggest test programs and shell commands. The small `main` files used to
+  test each module were based on skeletons given by the AI. I wrote the first
+  steps of `tests/bench.sh` myself; the final version (minimum, maximum,
+  average and failure count) was written by the AI at my request.
+- To write temporary explanatory comments for my teammate (removed before
   submission).
-- To help draft this README. I checked its content against the code.
+- To help draft this README, including the benchmark tables built from my own
+  measurements. I checked its content against the code.
 
 **Learner B**
 
