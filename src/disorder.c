@@ -6,7 +6,7 @@
 /*   By: wngamkri <wngamkri@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/10/30 09:33:01 by wngamkri          #+#    #+#             */
-/*   Updated: 2026/10/30 09:45:51 by wngamkri         ###   ########.fr       */
+/*   Updated: 2026/11/10 16:37:25 by wngamkri         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -34,4 +34,3 @@ void	compute_disorder(t_ctx *ctx)
 	}
 }
 
-// just check pairs and mistakes

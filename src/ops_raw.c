@@ -6,49 +6,12 @@
 /*   By: wngamkri <wngamkri@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/10/23 16:21:49 by wngamkri          #+#    #+#             */
-/*   Updated: 2026/10/24 19:27:15 by wngamkri         ###   ########.fr       */
+/*   Updated: 2026/11/10 16:37:54 by wngamkri         ###   ########.fr       */
 /*                                                                            */
-/* ************************************************************************** */
-
-/* ************************************************************************** */
-/*   TEMP COMMENTS FOR TEAMMATE - remove before submission (Norm forbids      */
-/*   comments inside function bodies).                                        */
-/*                                                                            */
-/*   ops_raw.c : the 4 basic moves on a linked-list stack.                   */
-/*                                                                            */
-/*   "raw" = they only change the pointers of a stack. They do NOT print     */
-/*   anything and do NOT count anything. do_op (ops.c) calls them, then      */
-/*   counts and prints the operation name.                                    */
-/*                                                                            */
-/*   Mapping to the push_swap operations:                                     */
-/*     sa / sb / ss   -> raw_swap    on a / b / both                         */
-/*     pa / pb        -> raw_push    b->a / a->b                             */
-/*     ra / rb / rr   -> raw_rotate  on a / b / both                         */
-/*     rra/rrb/rrr    -> raw_reverse on a / b / both                         */
-/*                                                                            */
-/*   No data is copied: we only re-wire the ->next arrows and s->top.       */
-/*   The ORDER of the re-wiring matters: always save/use the old arrow       */
-/*   before overwriting it, otherwise a node gets lost (leak) or the list    */
-/*   loops forever.                                                           */
 /* ************************************************************************** */
 
 #include "push_swap.h"
 
-/*
-** raw_swap  (sa / sb)
-** Swaps the first two nodes. Does nothing if there are fewer than 2
-** (otherwise we would read ->next of a NULL pointer and crash).
-**
-**   before: top -> [A] -> [B] -> [C] -> NULL
-**   after : top -> [B] -> [A] -> [C] -> NULL
-**
-** 3 arrows change, in this order:
-**   1. A->next = B->next   (A now points to C; B still points to C,
-**                           so we can read it before overwriting B)
-**   2. B->next = A
-**   3. top     = B
-** Doing step 2 before step 1 would lose C.
-*/
 void	raw_swap(t_stack *s)
 {
 	t_node	*first;
@@ -63,23 +26,6 @@ void	raw_swap(t_stack *s)
 	s->top = second;
 }
 
-/*
-** raw_push  (pa / pb)
-** Moves the top node of "from" onto the top of "to".
-** Does nothing if "from" is empty.
-**
-**   before: from: [A] -> [B] -> NULL      to: [X] -> NULL
-**   after : from: [B] -> NULL             to: [A] -> [X] -> NULL
-**
-** Steps:
-**   1. remember A in "node"
-**   2. from->top moves to the next node (B)
-**   3. A->next = to->top   (A is placed on top of X)
-**   4. to->top = A
-** Step 3 must come before step 4, or we lose X.
-** If "to" is empty, to->top is NULL, so A->next becomes NULL: correct,
-** no special case needed.
-*/
 void	raw_push(t_stack *from, t_stack *to)
 {
 	t_node	*node;
