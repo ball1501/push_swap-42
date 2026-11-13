@@ -8,3 +8,4 @@ checker_Mac
 push_swap
 Push-Swap-Tester/
 *.txt
+obj/
