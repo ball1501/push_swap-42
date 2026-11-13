@@ -5,6 +5,7 @@ tests/
 test*
 *.pdf
 checker_Mac
+checker
 push_swap
 Push-Swap-Tester/
 *.txt
