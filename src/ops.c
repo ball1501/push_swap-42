@@ -39,7 +39,7 @@ char	*op_name(t_op op)
 	return ("");
 }
 
-void	do_op(t_ctx *ctx, t_op op)
+void	apply_op(t_ctx *ctx, t_op op)
 {
 	if (op == SA || op == SS)
 		raw_swap(&ctx->a);
@@ -57,6 +57,11 @@ void	do_op(t_ctx *ctx, t_op op)
 		raw_reverse(&ctx->a);
 	if (op == RRB || op == RRR)
 		raw_reverse(&ctx->b);
+}
+
+void	do_op(t_ctx *ctx, t_op op)
+{
+	apply_op(ctx, op);
 	ctx->counts[op]++;
 	ft_putendl_fd(op_name(op), 1);
 }

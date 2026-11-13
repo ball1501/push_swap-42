@@ -81,6 +81,7 @@ void		raw_swap(t_stack *s);
 void		raw_push(t_stack *from, t_stack *to);
 void		raw_rotate(t_stack *s);
 void		raw_reverse(t_stack *s);
+void		apply_op(t_ctx *ctx, t_op op);
 void		do_op(t_ctx *ctx, t_op op);
 char		*op_name(t_op op);
 void		bring_to_top_a(t_ctx *ctx, int pos);

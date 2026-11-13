@@ -35,6 +35,11 @@ SRC			= bench_utils.c \
 			  stack.c \
 			  main.c
 
+BONUS_NAME	= checker
+BONUS_SRC	= checker_bonus.c
+BONUS_OBJ	= $(addprefix $(OBJ_DIR)/, $(BONUS_SRC:.c=.o))
+LIB_OBJ		= $(filter-out $(OBJ_DIR)/main.o, $(OBJ))
+
 OBJ			= $(addprefix $(OBJ_DIR)/, $(SRC:.c=.o))
 
 all: $(NAME)
@@ -49,14 +54,17 @@ $(OBJ_DIR)/%.o: $(SRC_DIR)/%.c includes/push_swap.h
 	@mkdir -p $(OBJ_DIR)
 	$(CC) $(CFLAGS) $(INC) -c $< -o $@
 
+bonus: $(OBJ) $(BONUS_OBJ) $(LIBFT)
+	$(CC) $(CFLAGS) $(LIB_OBJ) $(BONUS_OBJ) $(LIBFT) -o $(BONUS_NAME)
+
 clean:
 	rm -rf $(OBJ_DIR)
 	$(MAKE) -C $(LIBFT_DIR) clean
 
 fclean: clean
-	rm -f $(NAME)
+	rm -f $(NAME) $(BONUS_NAME)
 	$(MAKE) -C $(LIBFT_DIR) fclean
 
 re: fclean all
 
-.PHONY: all clean fclean re
+.PHONY: bonus all clean fclean re
