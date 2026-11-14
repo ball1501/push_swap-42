@@ -74,9 +74,10 @@ Behaviour:
 ```
 [bench] disorder: 40.00%
 [bench] strategy: Adaptive / O(n sqrt(n))
-[bench] total_ops: 13
+[bench] total_ops: 18
 [bench] sa: 0 sb: 0 ss: 0 pa: 5 pb: 5
-[bench] ra: 2 rb: 1 rr: 0 rra: 0 rrb: 0 rrr: 0
+[bench] ra: 2 rb: 4 rr: 0 rra: 0 rrb: 2 rrr: 0
+
 ```
 
 The strategy line shows the name requested by the user, and the complexity class
